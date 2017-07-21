@@ -1,0 +1,32 @@
+allprojects {
+        repositories {
+                maven {
+                        url 'https://hgdata.jfrog.io/hgdata/plugins-release'
+                        credentials {
+                                username = "${artifactory_user}"
+                                password = "${artifactory_password}"
+                        }
+                }
+                maven {
+                        url 'https://hgdata.jfrog.io/hgdata/plugins-snapshot'
+                        credentials {
+                                username = "${artifactory_user}"
+                                password = "${artifactory_password}"
+                        }
+                }
+                maven {
+                        url 'https://hgdata.jfrog.io/hgdata/libs-release'
+                        credentials {
+                                username = "${artifactory_user}"
+                                password = "${artifactory_password}"
+                        }
+                }
+                maven {
+                        url 'https://hgdata.jfrog.io/hgdata/libs-snapshot'
+                        credentials {
+                                username = "${artifactory_user}"
+                                password = "${artifactory_password}"
+                        }
+                }
+        }
+}

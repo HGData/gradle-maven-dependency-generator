@@ -1,153 +1,59 @@
-buildscript {
-  repositories {
-    jcenter()
-  }
-
-  dependencies {
-    classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
-  }
-}
-
 plugins {
-    id "com.jfrog.bintray" version "1.7.3"
+    id 'groovy'
+    id 'maven'
+    id 'com.jfrog.artifactory' version '3.1.0'
+    id 'com.gradle.plugin-publish' version '0.9.1'
+    id 'org.sonarqube' version '2.5'
 }
 
-apply plugin: 'groovy'
-apply plugin: 'nexus'
-apply plugin: 'codenarc'
+group = 'com.hgdata'
+version = '0.1.0-SNAPSHOT'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
-group = 'com.github.ben-manes'
-version = '0.15.0'
+defaultTasks 'clean', 'jar', 'generatePomFileForMavenJavaPublication'
 
-sourceCompatibility = '1.6'
-
-
-
-repositories {
-  mavenCentral()
-}
-
-codenarcMain {
-  configFile = file('config/codenarc/rules.groovy')
-}
-
-codenarcTest {
-  configFile = file('config/codenarc/testrules.groovy')
-}
-
-codenarc {
-  toolVersion = 0.21
-}
-
-tasks.withType(CodeNarc) { codeNarcTask ->
-  codeNarcTask.ignoreFailures = true
-}
+apply from: file('gradle/publish.gradle')
 
 dependencies {
-  compile gradleApi()
-  compile localGroovy()
-
-  compile group: 'com.thoughtworks.xstream', name: 'xstream', version: '1.4.7'
-  testCompile gradleTestKit()
-  testCompile('org.spockframework:spock-core:1.0-groovy-2.4') {
-    exclude(module: 'groovy-all')
-  }
-}
-
-// Write the plugin's classpath to a file to share with the tests
-task createClasspathManifest {
-    def outputDir = file("$buildDir/$name")
-
-    inputs.files sourceSets.main.runtimeClasspath
-    outputs.dir outputDir
-
-    doLast {
-        outputDir.mkdirs()
-        file("$outputDir/plugin-classpath.txt").text = sourceSets.main.runtimeClasspath.join("\n")
-    }
-}
-
-// Add the classpath file to the test runtime classpath
-dependencies {
-    testRuntime files(createClasspathManifest)
+    compile gradleApi()
+    compile localGroovy()
+    compile group: 'com.thoughtworks.xstream', name: 'xstream', version: '1.4.7'
 }
 
 jar {
-  manifest {
-      attributes 'Implementation-Title': 'Gradle Versions plugin',
-                 'Implementation-Version': version,
-                 'Built-By': System.getProperty('user.name'),
-                 'Built-Date': new Date(),
-                 'Built-JDK': System.getProperty('java.version'),
-                 'Built-Gradle': gradle.gradleVersion
-  }
-}
-
-task groovydocJar(type: Jar, dependsOn: groovydoc) {
-  classifier = 'javadoc'
-  from groovydoc.destinationDir
-}
-
-artifacts {
-  archives groovydocJar
-}
-
-tasks.withType(Test){
-  testLogging {
-    exceptionFormat "full"
-  }
-}
-
-modifyPom {
-  project {
-    name 'Gradle Versions plugin'
-    description 'Gradle plugin that provides tasks for discovering dependency updates.'
-    url 'https://github.com/ben-manes/gradle-versions-plugin'
-    inceptionYear '2012'
-
-    scm {
-      url 'https://github.com/ben-manes/gradle-versions-plugin'
-      connection 'scm:https://ben-manes@github.com/ben-manes/gradle-versions-plugin.git'
-      developerConnection 'scm:git://github.com/ben-manes/gradle-versions-plugin.git'
+    manifest {
+        attributes 'Implementation-Title': 'Gradle Maven Dependency Generator plugin',
+                'Implementation-Version': version,
+                'Built-By': System.getProperty('user.name'),
+                'Built-Date': new Date(),
+                'Built-JDK': System.getProperty('java.version'),
+                'Built-Gradle': gradle.gradleVersion
     }
-
-    licenses {
-      license {
-        name 'The Apache Software License, Version 2.0'
-        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-        distribution 'repo'
-      }
-    }
-
-    developers {
-      developer {
-        id 'ben-manes'
-        name 'Ben Manes'
-        email 'ben.manes@gmail.com'
-      }
-      developer {
-        id 'zenedith'
-        name 'Zenedith'
-        email 'zenedith@wp.pl'
-      }
-      developer {
-        id 'jochenberger'
-        name 'Jochen Berger'
-      }
-    }
-  }
 }
 
-bintray {
-    user = 'fooberger'
-    key = System.env.bintrayAPIKey
-    configurations = ['archives']
-    publish = true
-    pkg {
-        repo = 'maven'
-        name = 'com.github.ben-manes:gradle-versions-plugin'
-        version {
-          attributes = ['gradle-plugin' : 'com.github.ben-manes.versions:com.github.ben-manes:gradle-versions-plugin']
+artifactory {
+    contextUrl = "${artifactory_contextUrl}"   //The base Artifactory URL if not overridden by the publisher/resolver
+    publish {
+        repository {
+            repoKey = version.endsWith('SNAPSHOT') ? 'libs-snapshot-local' : 'libs-release-local'
+            // The Artifactory repository key to publish to
+            username = "${artifactory_user}" // The publisher user name
+            password = "${artifactory_password}" // The publisher password
         }
+        defaults {
+            // Reference to Gradle publications defined in the build script.
+            // This is how we tell the Artifactory Plugin which artifacts should be
+            // published to Artifactory.
+            publications('mavenJava')
+            publishArtifacts = true
+            // Properties to be attached to the published artifacts.
+            properties = ['dev.team': 'packaging']
+        }
+    }
+    resolve {
+        repoKey = 'libs-release'
+        username = "${artifactory_user}" // The publisher user name
+        password = "${artifactory_password}" // The publisher password
     }
 }
