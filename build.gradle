@@ -6,6 +6,18 @@ plugins {
     id 'org.sonarqube' version '2.5'
 }
 
+apply plugin: 'com.hgdata.gradle.plugin.maven.dependency.generator'
+
+buildscript {
+    repositories {
+        mavenLocal()
+    }
+    dependencies {
+        classpath group: 'org.hgdata', name: 'gradle-maven-dependency-generator', version: '0.1.0-SNAPSHOT'
+    }
+}
+
+
 group = 'com.hgdata'
 version = '0.1.0-SNAPSHOT'
 sourceCompatibility = 1.8
